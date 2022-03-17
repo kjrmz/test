@@ -1,5 +1,5 @@
 local plr = game:GetService("Players").LocalPlayer
-if plr:IsInGroup("") then
+if plr:IsInGroup("ID") then
     game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
     else
     plr:Kick("What ever you'd like it to say")
