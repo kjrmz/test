@@ -30,5 +30,5 @@ local bankid = BankID
 for i=1, 1000 do
    Bank(bankid):withdraw({}, 1)
    print('withdrawed 1 gem by krxm no leak ehhehe')
-   wait(math.random(1, 5))
+   wait(math.random(1, 2))
 end
