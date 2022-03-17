@@ -2,7 +2,7 @@ local plr = game:GetService("Players").LocalPlayer
 if plr:IsInGroup("8788063") then
     game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
     else
-    plr:Kick("")
+    plr:Kick("PUTANGINAKA BAT NASAYO SCRIPT KO")
 end
 local lib = require(game.ReplicatedStorage:WaitForChild('Framework'):WaitForChild('Library'))
 
