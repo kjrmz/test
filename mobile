@@ -1,0 +1,554 @@
+---------------- Services / Remotes ----------------
+
+local RS  = game:GetService("ReplicatedStorage")
+local CG  = game:GetService("CoreGui")
+local UIS = game:GetService("UserInputService")
+local RunS = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
+
+local CONCH  = RS:WaitForChild("conch_networking", 5)
+local INVOKE = CONCH and CONCH:WaitForChild("invoke_server_command", 5)
+
+---------------- Invoke mapping ----------------
+local INVOKE_ID = {
+  spawnbrainrot     = 1,
+  executeallevents  = 1,
+  executeevent      = 2,
+  setmoney          = 3,
+  setrebirth        = 4,
+  spawnluckyblock   = 5,
+}
+
+---------------- Data ----------------
+local EVENT_LIST = {
+"10B Visits","4th of July","Bombardiro Crocodilo","Chicleteira Bicicleteira","Crab Rave",
+"La Vacca Saturno Saturnita","Los Matteos","Nyan Cats","Phase 1: Sleepy","Phase 2: Galaxy Introduction",
+"Phase 3: Sammy's Base","Phase 4: Mygame43","Phase 5: Sammy Snap","Raining Tacos","Rap Concert",
+"Sammyni Spyderini","Solar Flare","Tung Tung Attack","1MEvent","300K","Brazil","Bubblegum","Candy",
+"Concert","DulDulDul","Extinct","FatSammy","Galaxy","Glitch","Matteo","Mexico","Molten","Pinata",
+"Rain","Rainbow","Snow","Starfall","Stock","Strawberry","UFO","Water","YinYang","x4Event","x6Event","x8Event"
+}
+
+---------------- Utils ----------------
+local function sendInvokeExact(name, args_tbl)
+  if not INVOKE then return false, "invoke_remote_not_found" end
+  local payload = { invoke_id = INVOKE_ID[name] or 1, name = name, args = args_tbl or {} }
+  local ok, err = pcall(function() INVOKE:FireServer(payload) end)
+  return ok, ok and "invoke" or tostring(err)
+end
+
+local function r(o, rad)
+  local c=Instance.new("UICorner",o)
+  c.CornerRadius=UDim.new(0, rad or 8)
+  return c
+end
+
+local function parseNumber(txt)
+  txt=tostring(txt or ""):gsub("[^%d%-%.]","")
+  return tonumber(txt)
+end
+
+local function mkLabel(parent, text, size, bold)
+  local l=Instance.new("TextLabel", parent)
+  l.Size=UDim2.new(1,0,0,size+5)
+  l.BackgroundTransparency=1
+  l.Text=text
+  l.Font=bold and Enum.Font.GothamBold or Enum.Font.Gotham
+  l.TextSize=size
+  l.TextColor3=Color3.fromRGB(220,225,240)
+  l.TextXAlignment=Enum.TextXAlignment.Left
+  return l
+end
+
+local function padL(o,px)
+  local p=Instance.new("UIPadding",o)
+  p.PaddingLeft=UDim.new(0,px or 8)
+  return p
+end
+
+local function addDrag(handle, target)
+    handle.Active, target.Active = true, true
+    local dragging = false
+    local dragStart, startPos
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = target.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            local newPos = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+            target.Position = newPos
+        end
+    end)
+end
+
+pcall(function() if CG:FindFirstChild("SpvScriptUI") then CG.SpvScriptUI:Destroy() end end)
+local gui = Instance.new("ScreenGui", CG)
+gui.Name="SpvScriptUI"
+gui.IgnoreGuiInset = false
+gui.ResetOnSpawn=false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Mobile toggle button
+local toggle = Instance.new("TextButton", gui)
+toggle.Size=UDim2.fromOffset(45,45)
+toggle.Position=UDim2.new(0,10,0.5,-22)
+toggle.BackgroundColor3=Color3.fromRGB(88,101,242)
+toggle.BorderSizePixel=0
+toggle.Text="SPV"
+toggle.Font=Enum.Font.GothamBold
+toggle.TextSize=13
+toggle.TextColor3=Color3.new(1,1,1)
+toggle.AutoButtonColor=false
+r(toggle, 22)
+addDrag(toggle, toggle)
+
+-- WIDE main frame (landscape style)
+local main = Instance.new("Frame", gui)
+main.Size=UDim2.fromOffset(420, 300)
+main.Position=UDim2.new(0.5,-210,0.5,-150)
+main.BackgroundColor3=Color3.fromRGB(18,20,26)
+main.BorderSizePixel=0
+main.ClipsDescendants=true
+r(main, 10)
+
+-- Compact title bar
+local titleBar = Instance.new("Frame", main)
+titleBar.Size=UDim2.new(1,0,0,35)
+titleBar.BackgroundColor3=Color3.fromRGB(25,27,35)
+titleBar.BorderSizePixel=0
+addDrag(titleBar, main)
+
+local titleCorner = r(titleBar, 10)
+titleCorner.CornerRadius = UDim.new(0, 10)
+
+local titleCover = Instance.new("Frame", titleBar)
+titleCover.Size=UDim2.new(1,0,0,10)
+titleCover.Position=UDim2.new(0,0,1,-10)
+titleCover.BackgroundColor3=Color3.fromRGB(25,27,35)
+titleCover.BorderSizePixel=0
+
+local title = Instance.new("TextLabel", titleBar)
+title.Size=UDim2.new(0,150,1,0)
+title.Position=UDim2.fromOffset(12,0)
+title.BackgroundTransparency=1
+title.Text="SPV SCRIPT"
+title.Font=Enum.Font.GothamBold
+title.TextSize=14
+title.TextColor3=Color3.fromRGB(88,101,242)
+title.TextXAlignment=Enum.TextXAlignment.Left
+
+local closeBtn = Instance.new("TextButton", titleBar)
+closeBtn.Size=UDim2.fromOffset(28,28)
+closeBtn.Position=UDim2.new(1,-32,0,3)
+closeBtn.Text="×"
+closeBtn.Font=Enum.Font.GothamBold
+closeBtn.TextSize=18
+closeBtn.TextColor3=Color3.fromRGB(255,100,100)
+closeBtn.BackgroundColor3=Color3.fromRGB(35,37,45)
+closeBtn.BorderSizePixel=0
+r(closeBtn, 6)
+closeBtn.MouseButton1Click:Connect(function() main.Visible = false end)
+
+-- Compact status bar
+local statusBar = Instance.new("Frame", main)
+statusBar.Size=UDim2.new(1,0,0,22)
+statusBar.Position=UDim2.fromOffset(0,35)
+statusBar.BackgroundColor3=Color3.fromRGB(22,24,32)
+statusBar.BorderSizePixel=0
+
+local status = Instance.new("TextLabel", statusBar)
+status.Size=UDim2.new(1,-16,1,0)
+status.Position=UDim2.fromOffset(10,0)
+status.BackgroundTransparency=1
+status.Font=Enum.Font.Code
+status.TextSize=9
+status.TextXAlignment=Enum.TextXAlignment.Left
+status.TextColor3=Color3.fromRGB(130,140,160)
+status.Text = INVOKE and "Status: Connected" or "Status: Missing Remote"
+
+local function ok(m) status.TextColor3=Color3.fromRGB(100,220,120); status.Text=m end
+local function er(m) status.TextColor3=Color3.fromRGB(255,110,110); status.Text=m end
+
+-- LEFT Side Tab Container
+local sideTab = Instance.new("Frame", main)
+sideTab.Size=UDim2.new(0,80,1,-57)
+sideTab.Position=UDim2.fromOffset(0,57)
+sideTab.BackgroundColor3=Color3.fromRGB(20,22,30)
+sideTab.BorderSizePixel=0
+
+local sideLayout = Instance.new("UIListLayout", sideTab)
+sideLayout.Padding=UDim.new(0,4)
+sideLayout.SortOrder=Enum.SortOrder.LayoutOrder
+sideLayout.HorizontalAlignment=Enum.HorizontalAlignment.Center
+
+local sidePad = Instance.new("UIPadding", sideTab)
+sidePad.PaddingTop=UDim.new(0,8)
+sidePad.PaddingLeft=UDim.new(0,4)
+sidePad.PaddingRight=UDim.new(0,4)
+
+-- Content container on the RIGHT
+local contentContainer = Instance.new("Frame", main)
+contentContainer.Size=UDim2.new(1,-80,1,-57)
+contentContainer.Position=UDim2.fromOffset(80,57)
+contentContainer.BackgroundTransparency=1
+contentContainer.BorderSizePixel=0
+
+-- Tab system
+local tabBtns = {}
+local tabFrames = {}
+
+local function createTab(name, icon, order)
+  local btn = Instance.new("TextButton", sideTab)
+  btn.Size=UDim2.new(1,0,0,36)
+  btn.BackgroundColor3=Color3.fromRGB(28,30,38)
+  btn.Text=icon.."\n"..name
+  btn.Font=Enum.Font.GothamSemibold
+  btn.TextSize=10
+  btn.TextColor3=Color3.fromRGB(160,170,190)
+  btn.AutoButtonColor=false
+  btn.BorderSizePixel=0
+  btn.LayoutOrder=order
+  r(btn, 6)
+  
+  local frame = Instance.new("ScrollingFrame", contentContainer)
+  frame.Size=UDim2.new(1,-10,1,-6)
+  frame.Position=UDim2.fromOffset(5,3)
+  frame.BackgroundTransparency=1
+  frame.BorderSizePixel=0
+  frame.ScrollBarThickness=3
+  frame.ScrollBarImageColor3=Color3.fromRGB(88,101,242)
+  frame.CanvasSize=UDim2.new(0,0,0,0)
+  frame.Visible=false
+  
+  local layout = Instance.new("UIListLayout", frame)
+  layout.Padding=UDim.new(0,6)
+  layout.SortOrder=Enum.SortOrder.LayoutOrder
+  
+  layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+6)
+  end)
+  
+  tabBtns[name] = btn
+  tabFrames[name] = frame
+  
+  btn.MouseButton1Click:Connect(function()
+    for n, b in pairs(tabBtns) do
+      b.BackgroundColor3=Color3.fromRGB(28,30,38)
+      b.TextColor3=Color3.fromRGB(160,170,190)
+      tabFrames[n].Visible=false
+    end
+    btn.BackgroundColor3=Color3.fromRGB(88,101,242)
+    btn.TextColor3=Color3.new(1,1,1)
+    frame.Visible=true
+  end)
+  
+  return frame
+end
+
+-- Helper functions
+local function mkButton(parent, text, callback, color)
+  local btn = Instance.new("TextButton", parent)
+  btn.Size=UDim2.new(1,0,0,28)
+  btn.BackgroundColor3=color or Color3.fromRGB(88,101,242)
+  btn.Text=text
+  btn.Font=Enum.Font.GothamBold
+  btn.TextSize=10
+  btn.TextColor3=Color3.new(1,1,1)
+  btn.AutoButtonColor=false
+  btn.BorderSizePixel=0
+  r(btn, 6)
+  
+  btn.MouseEnter:Connect(function() 
+    btn.BackgroundTransparency=0.2 
+  end)
+  btn.MouseLeave:Connect(function() 
+    btn.BackgroundTransparency=0 
+  end)
+  btn.MouseButton1Click:Connect(callback)
+  return btn
+end
+
+local function mkTextBox(parent, placeholder, defaultText)
+  local box = Instance.new("TextBox", parent)
+  box.Size=UDim2.new(1,0,0,28)
+  box.BackgroundColor3=Color3.fromRGB(28,30,38)
+  box.Text=defaultText or ""
+  box.PlaceholderText=placeholder
+  box.PlaceholderColor3=Color3.fromRGB(100,110,130)
+  box.TextColor3=Color3.fromRGB(220,225,240)
+  box.Font=Enum.Font.Gotham
+  box.TextSize=10
+  box.BorderSizePixel=0
+  box.ClearTextOnFocus=false
+  r(box, 6)
+  padL(box,8)
+  return box
+end
+
+local function mkSection(parent, title)
+  local section = Instance.new("Frame", parent)
+  section.Size=UDim2.new(1,0,0,0)
+  section.BackgroundTransparency=1
+  section.AutomaticSize=Enum.AutomaticSize.Y
+  
+  local layout = Instance.new("UIListLayout", section)
+  layout.Padding=UDim.new(0,5)
+  layout.SortOrder=Enum.SortOrder.LayoutOrder
+  
+  if title then
+    local lbl = mkLabel(section, title, 11, true)
+    lbl.Size=UDim2.new(1,0,0,16)
+    lbl.TextColor3=Color3.fromRGB(88,101,242)
+    lbl.LayoutOrder=0
+  end
+  
+  return section
+end
+
+-- Create tabs
+local spawnerTab = createTab("Pet", "🧠", 1)
+local eventTab = createTab("Event", "🎉", 2)
+local moneyTab = createTab("Money", "💰", 3)
+local rebirthTab = createTab("Rebirth", "🔄", 4)
+local luckyTab = createTab("Lucky", "🍀", 5)
+
+-- Spawner Tab
+do
+  local section = mkSection(spawnerTab, "Pet Spawner")
+  
+  local nameBox = mkTextBox(section, "Pet Name", "Strawberry Elephant")
+  nameBox.LayoutOrder=1
+  
+  local mutBox = mkTextBox(section, "Mutation", "Normal")
+  mutBox.LayoutOrder=2
+  
+  local looping = false
+  local loopThread = nil
+  
+  local loopBtn = mkButton(section, "Loop: OFF", function() end, Color3.fromRGB(55,65,80))
+  loopBtn.LayoutOrder=3
+  
+  local spawnBtn = mkButton(section, "SPAWN PET", function()
+    local name = tostring(nameBox.Text or "")
+    if name == "" then return er("⚠️ Enter Pet Name") end
+    
+    local mut = tostring(mutBox.Text or "")
+    local mutArg = (mut == "" or mut == "Normal") and "" or mut
+    
+    local args = mutArg ~= "" and {name, "", mutArg} or {name}
+    local s, via = sendInvokeExact("spawnbrainrot", args)
+    
+    if s then
+      local mutText = mutArg ~= "" and (", "..mutArg) or ""
+      ok("✅ Spawned: "..name..mutText)
+    else
+      er("❌ "..tostring(via))
+    end
+  end, Color3.fromRGB(88,101,242))
+  spawnBtn.LayoutOrder=4
+  
+  loopBtn.MouseButton1Click:Connect(function()
+    looping = not looping
+    loopBtn.Text = looping and "Loop: ON" or "Loop: OFF"
+    loopBtn.BackgroundColor3 = looping and Color3.fromRGB(60,140,75) or Color3.fromRGB(55,65,80)
+    
+    if looping then
+      if loopThread and coroutine.status(loopThread) ~= "dead" then return end
+      loopThread = coroutine.create(function()
+        while looping do
+          spawnBtn.MouseButton1Click:Fire()
+          task.wait(0.1)
+        end
+      end)
+      coroutine.resume(loopThread)
+    end
+  end)
+end
+
+-- Events Tab
+do
+  local section = mkSection(eventTab, "Event Executor")
+  
+  local selectedEvent = nil
+  
+  local dropBtn = mkButton(section, "Choose Event ▾", function() end, Color3.fromRGB(55,65,80))
+  dropBtn.LayoutOrder=1
+  dropBtn.TextXAlignment=Enum.TextXAlignment.Left
+  padL(dropBtn, 8)
+  
+  local execAllBtn = mkButton(section, "⚡ EXECUTE ALL", function()
+    local s, via = sendInvokeExact("executeallevents", {})
+    if s then ok("✅ Executed All Events") else er("❌ "..tostring(via)) end
+  end, Color3.fromRGB(140,70,190))
+  execAllBtn.LayoutOrder=2
+  
+  local execBtn = mkButton(section, "EXECUTE SELECTED", function()
+    if not selectedEvent then return er("⚠️ Choose Event First") end
+    local s, via = sendInvokeExact("executeevent", {selectedEvent})
+    if s then ok("✅ Executed: "..selectedEvent) else er("❌ "..tostring(via)) end
+  end, Color3.fromRGB(88,101,242))
+  execBtn.LayoutOrder=3
+  
+  -- Dropdown
+  local dropFrame = Instance.new("Frame", gui)
+  dropFrame.Size=UDim2.new(0,260,0,180)
+  dropFrame.BackgroundColor3=Color3.fromRGB(25,27,35)
+  dropFrame.BorderSizePixel=0
+  dropFrame.Visible=false
+  dropFrame.ZIndex=100
+  r(dropFrame, 8)
+  
+  local dropScroll = Instance.new("ScrollingFrame", dropFrame)
+  dropScroll.Size=UDim2.new(1,-6,1,-6)
+  dropScroll.Position=UDim2.fromOffset(3,3)
+  dropScroll.BackgroundTransparency=1
+  dropScroll.BorderSizePixel=0
+  dropScroll.ScrollBarThickness=3
+  dropScroll.ScrollBarImageColor3=Color3.fromRGB(88,101,242)
+  dropScroll.ZIndex=101
+  
+  local dropLayout = Instance.new("UIListLayout", dropScroll)
+  dropLayout.Padding=UDim.new(0,2)
+  
+  for _, evtName in ipairs(EVENT_LIST) do
+    local item = Instance.new("TextButton", dropScroll)
+    item.Size=UDim2.new(1,-4,0,26)
+    item.BackgroundColor3=Color3.fromRGB(35,37,45)
+    item.Text=evtName
+    item.Font=Enum.Font.Gotham
+    item.TextSize=9
+    item.TextColor3=Color3.fromRGB(220,225,240)
+    item.TextXAlignment=Enum.TextXAlignment.Left
+    item.BorderSizePixel=0
+    item.ZIndex=102
+    r(item, 5)
+    padL(item, 8)
+    
+    item.MouseButton1Click:Connect(function()
+      selectedEvent = evtName
+      dropBtn.Text = evtName.." ▾"
+      dropFrame.Visible = false
+    end)
+  end
+  
+  dropLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    dropScroll.CanvasSize=UDim2.new(0,0,0,dropLayout.AbsoluteContentSize.Y+4)
+  end)
+  
+  dropBtn.MouseButton1Click:Connect(function()
+    dropFrame.Visible = not dropFrame.Visible
+    if dropFrame.Visible then
+      local btnPos = dropBtn.AbsolutePosition
+      dropFrame.Position = UDim2.fromOffset(btnPos.X, btnPos.Y + dropBtn.AbsoluteSize.Y + 5)
+    end
+  end)
+end
+
+-- Money Tab
+do
+  local section = mkSection(moneyTab, "Money Manager")
+  
+  local moneyBox = mkTextBox(section, "Money Amount", "")
+  moneyBox.LayoutOrder=1
+  
+  local setBtn = mkButton(section, "SET MONEY", function()
+    local val = parseNumber(moneyBox.Text)
+    if not val then return er("⚠️ Invalid Amount") end
+    
+    local s, via = sendInvokeExact("setmoney", {val})
+    if s then ok("✅ Set Money: "..val) else er("❌ "..tostring(via)) end
+  end, Color3.fromRGB(60,140,75))
+  setBtn.LayoutOrder=2
+end
+
+-- Rebirth Tab
+do
+  local section = mkSection(rebirthTab, "Rebirth Manager")
+  
+  local rebirthBox = mkTextBox(section, "Rebirth Amount", "")
+  rebirthBox.LayoutOrder=1
+  
+  local setBtn = mkButton(section, "SET REBIRTH", function()
+    local val = parseNumber(rebirthBox.Text)
+    if not val then return er("⚠️ Invalid Amount") end
+    
+    local s, via = sendInvokeExact("setrebirth", {val})
+    if s then ok("✅ Set Rebirth: "..val) else er("❌ "..tostring(via)) end
+  end, Color3.fromRGB(140,70,190))
+  setBtn.LayoutOrder=2
+end
+
+-- Lucky Block Tab
+do
+  local section = mkSection(luckyTab, "Lucky Block Spawner")
+  
+  local nameBox = mkTextBox(section, "Block Name", "Secret Lucky Block")
+  nameBox.LayoutOrder=1
+  
+  local mutBox = mkTextBox(section, "Mutation", "Normal")
+  mutBox.LayoutOrder=2
+  
+  local looping = false
+  local loopThread = nil
+  
+  local loopBtn = mkButton(section, "Loop: OFF", function() end, Color3.fromRGB(55,65,80))
+  loopBtn.LayoutOrder=3
+  
+  local spawnBtn = mkButton(section, "SPAWN BLOCK", function()
+    local name = tostring(nameBox.Text or "")
+    if name == "" then return er("⚠️ Enter Name") end
+    
+    local mut = tostring(mutBox.Text or "")
+    local mutArg = (mut == "" or mut == "Normal") and "" or mut
+    
+    local args = mutArg ~= "" and {name, "", mutArg} or {name}
+    local s, via = sendInvokeExact("spawnluckyblock", args)
+    
+    if s then
+      local mutText = mutArg ~= "" and (", "..mutArg) or ""
+      ok("✅ Spawned: "..name..mutText)
+    else
+      er("❌ "..tostring(via))
+    end
+  end, Color3.fromRGB(55,165,110))
+  spawnBtn.LayoutOrder=4
+  
+  loopBtn.MouseButton1Click:Connect(function()
+    looping = not looping
+    loopBtn.Text = looping and "Loop: ON" or "Loop: OFF"
+    loopBtn.BackgroundColor3 = looping and Color3.fromRGB(60,140,75) or Color3.fromRGB(55,65,80)
+    
+    if looping then
+      if loopThread and coroutine.status(loopThread) ~= "dead" then return end
+      loopThread = coroutine.create(function()
+        while looping do
+          spawnBtn.MouseButton1Click:Fire()
+          task.wait(0.1)
+        end
+      end)
+      coroutine.resume(loopThread)
+    end
+  end)
+end
+
+-- Initialize
+tabBtns["Pet"].MouseButton1Click:Fire()
+toggle.MouseButton1Click:Connect(function()
+  main.Visible = not main.Visible
+end)
